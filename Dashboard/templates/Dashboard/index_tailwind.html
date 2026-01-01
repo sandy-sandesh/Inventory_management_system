@@ -1,0 +1,209 @@
+{% comment %} {% extends "Dashboard/base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <!-- Metrics Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <!-- Total Items -->
+        <a href="{% url 'dashboard:items_list' %}" class="no-underline">
+            <div class="bg-white rounded-lg shadow-md hover:shadow-lg transition p-6 cursor-pointer transform hover:scale-105">
+                <div class="flex items-center mb-4">
+                    <div class="flex-shrink-0">
+                        <div class="flex items-center justify-center h-12 w-12 rounded-md bg-indigo-500 text-white">
+                            <i class="fas fa-box-open text-xl"></i>
+                        </div>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-gray-500 text-sm font-medium">Total Items</p>
+                    </div>
+                </div>
+                <p class="text-3xl font-bold text-gray-900">{{ metrics.total_items }}</p>
+            </div>
+        </a>
+
+        <!-- Categories -->
+        <div class="bg-white rounded-lg shadow-md hover:shadow-lg transition p-6">
+            <div class="flex items-center mb-4">
+                <div class="flex-shrink-0">
+                    <div class="flex items-center justify-center h-12 w-12 rounded-md bg-green-500 text-white">
+                        <i class="fas fa-tags text-xl"></i>
+                    </div>
+                </div>
+                <div class="ml-4">
+                    <p class="text-gray-500 text-sm font-medium">Categories</p>
+                </div>
+            </div>
+            <p class="text-3xl font-bold text-gray-900">{{ metrics.categories }}</p>
+        </div>
+
+        <!-- Low Stock -->
+        <a href="#low-stock-section" class="no-underline">
+            <div class="bg-white rounded-lg shadow-md hover:shadow-lg transition p-6 cursor-pointer transform hover:scale-105">
+                <div class="flex items-center mb-4">
+                    <div class="flex-shrink-0">
+                        <div class="flex items-center justify-center h-12 w-12 rounded-md bg-yellow-500 text-white">
+                            <i class="fas fa-exclamation-triangle text-xl"></i>
+                        </div>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-gray-500 text-sm font-medium">Low Stock</p>
+                    </div>
+                </div>
+                <p class="text-3xl font-bold text-gray-900">{{ metrics.low_stock }}</p>
+            </div>
+        </a>
+
+        <!-- Total Value -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <div class="flex items-center mb-4">
+                <div class="flex-shrink-0">
+                    <div class="flex items-center justify-center h-12 w-12 rounded-md bg-cyan-500 text-white">
+                        <i class="fas fa-money-bill text-xl"></i>
+                    </div>
+                </div>
+                <div class="ml-4">
+                    <p class="text-gray-500 text-sm font-medium">Total Value</p>
+                </div>
+            </div>
+            <p class="text-3xl font-bold text-gray-900">Rs. {{ metrics.total_value|floatformat:2 }}</p>
+        </div>
+    </div>
+
+    <!-- Charts and Sidebar -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+        <!-- Sales Chart -->
+        <div class="lg:col-span-2 bg-white rounded-lg shadow-md p-6">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-xl font-bold text-gray-900">Sales Analytics</h3>
+                <select id="salesPeriod" class="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    <option value="weekly">Weekly</option>
+                    <option value="monthly" selected>Monthly</option>
+                    <option value="yearly">Yearly</option>
+                </select>
+            </div>
+            <div style="height: 320px;">
+                <canvas id="salesChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Categories Sidebar -->
+        <div class="bg-white rounded-lg shadow-md p-6" id="categories-section">
+            <h3 class="text-xl font-bold text-gray-900 mb-4">
+                <i class="fas fa-tags text-indigo-500 mr-2"></i>Categories
+            </h3>
+            <div class="space-y-3 max-h-80 overflow-y-auto">
+                {% if categories %}
+                    {% for category in categories %}
+                    <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
+                        <span class="text-gray-700 font-medium">{{ category.name }}</span>
+                        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-indigo-100 text-indigo-800">
+                            {{ category.item_set.count }}
+                        </span>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <p class="text-gray-500 text-center py-8">No categories yet</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Latest Items and Transactions -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <!-- Recent Items -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <h3 class="text-xl font-bold text-gray-900 mb-4">
+                <i class="fas fa-history text-indigo-500 mr-2"></i>Recent Items
+            </h3>
+            <div class="space-y-3 max-h-80 overflow-y-auto">
+                {% if items %}
+                    {% for item in items %}
+                    <div class="p-4 border border-gray-200 rounded-lg hover:border-indigo-500 transition">
+                        <div class="flex justify-between items-start mb-2">
+                            <div>
+                                <p class="font-semibold text-gray-900">{{ item.name }}</p>
+                                <p class="text-sm text-gray-500">SN: {{ item.sn|default:"N/A" }}</p>
+                            </div>
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {% if item.stock < item.reorder_level %}bg-red-100 text-red-800{% else %}bg-green-100 text-green-800{% endif %}">
+                                Stock: {{ item.stock }}
+                            </span>
+                        </div>
+                        <p class="text-sm text-gray-600">Rs. {{ item.price }}</p>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <p class="text-gray-500 text-center py-8">No items added yet</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Recent Transactions -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <h3 class="text-xl font-bold text-gray-900 mb-4">
+                <i class="fas fa-exchange-alt text-indigo-500 mr-2"></i>Recent Transactions
+            </h3>
+            <div class="space-y-3 max-h-80 overflow-y-auto">
+                {% if recent_transactions %}
+                    {% for transaction in recent_transactions %}
+                    <div class="p-4 border border-gray-200 rounded-lg hover:border-indigo-500 transition">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <p class="font-semibold text-gray-900">{{ transaction.item.name|default:"Unknown Item" }}</p>
+                                <p class="text-sm text-gray-500">{{ transaction.created_at|date:"M d, Y" }}</p>
+                            </div>
+                            <span class="text-lg font-bold text-indigo-600">Rs. {{ transaction.amount }}</span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <p class="text-gray-500 text-center py-8">No transactions yet</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Low Stock Items Section -->
+    {% if low_stock_items %}
+    <div class="bg-white rounded-lg shadow-md p-6 mb-8" id="low-stock-section">
+        <h3 class="text-xl font-bold text-gray-900 mb-4">
+            <i class="fas fa-exclamation-circle text-red-500 mr-2"></i>Low Stock Items
+        </h3>
+        <div class="overflow-x-auto">
+            <table class="min-w-full">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Item Name</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">SN</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Current Stock</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Reorder Level</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Price</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200">
+                    {% for item in low_stock_items %}
+                    <tr class="hover:bg-gray-50 transition">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <a href="{% url 'dashboard:item_edit' item.pk %}" class="text-indigo-600 hover:text-indigo-900">
+                                {{ item.name }}
+                            </a>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ item.sn|default:"N/A" }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                {{ item.stock }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ item.reorder_level }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Rs. {{ item.price }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<script src="{% static 'Dashboard/js/main.js' %}"></script>
+{% endblock %} {% endcomment %}

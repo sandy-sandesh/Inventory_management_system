@@ -1,0 +1,121 @@
+{% extends "Dashboard/base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div class="bg-white rounded-lg shadow-md overflow-hidden">
+        <!-- Header -->
+        <div class="bg-gradient-to-r from-indigo-600 to-indigo-800 px-6 sm:px-8 py-6">
+            <h1 class="text-2xl sm:text-3xl font-bold text-white">{{ title }}</h1>
+        </div>
+
+        <!-- Form Body -->
+        <div class="p-6 sm:p-8">
+            <!-- Auto-Generated SN Info -->
+            {% if next_sn %}
+            <div class="mb-6 p-4 bg-indigo-50 border border-indigo-200 rounded-lg">
+                <p class="text-sm text-indigo-900">
+                    <i class="fas fa-tag mr-2"></i>
+                    <strong>Next SN:</strong> <span class="text-lg font-bold text-indigo-600">{{ next_sn }}</span>
+                </p>
+                <p class="text-xs text-indigo-700 mt-1">This SN will be automatically assigned to your item</p>
+            </div>
+            {% endif %}
+
+            <form method="post" class="space-y-6">
+                {% csrf_token %}
+                {% for field in form %}
+                <div>
+                    <label for="{{ field.id_for_label }}" class="block text-sm font-medium text-gray-900 mb-2">
+                        {{ field.label }}
+                        {% if field.field.required %}
+                        <span class="text-red-600">*</span>
+                        {% endif %}
+                    </label>
+                    
+                    {% if field.widget.input_type == 'select' %}
+                        {{ field }}
+                        <style>
+                            #{{ field.id_for_label }} {
+                                @apply w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent;
+                            }
+                        </style>
+                    {% else %}
+                        {{ field }}
+                        <style>
+                            #{{ field.id_for_label }} {
+                                @apply w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent;
+                            }
+                        </style>
+                    {% endif %}
+                    
+                    {% if field.help_text %}
+                    <p class="mt-1 text-sm text-gray-500">{{ field.help_text|safe }}</p>
+                    {% endif %}
+                    
+                    {% if field.errors %}
+                    <div class="mt-2 space-y-1">
+                        {% for error in field.errors %}
+                        <p class="text-sm text-red-600">{{ error }}</p>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+
+                <!-- Buttons -->
+                <div class="flex justify-between items-center pt-6 border-t border-gray-200">
+                    <a href="{% url 'dashboard:index' %}" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition">
+                        <i class="fas fa-arrow-left mr-2"></i>Cancel
+                    </a>
+                    <button type="submit" class="px-6 py-2 bg-gradient-to-r from-indigo-600 to-indigo-700 text-white rounded-lg hover:from-indigo-700 hover:to-indigo-800 transition transform hover:scale-105">
+                        <i class="fas fa-save mr-2"></i>Save Item
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+    input, select, textarea {
+        @apply w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent;
+    }
+</style>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Format price input
+        const priceInput = document.querySelector('input[name="price"]');
+        if (priceInput) {
+            priceInput.addEventListener('blur', function(e) {
+                if (e.target.value) {
+                    const value = parseFloat(e.target.value);
+                    if (!isNaN(value)) {
+                        e.target.value = value.toFixed(2);
+                    }
+                }
+            });
+        }
+
+        // Format stock input (numbers only)
+        const stockInput = document.querySelector('input[name="stock"]');
+        if (stockInput) {
+            stockInput.addEventListener('input', function(e) {
+                e.target.value = e.target.value.replace(/[^0-9]/g, '');
+            });
+        }
+
+        // Format reorder_level input (numbers only)
+        const reorderInput = document.querySelector('input[name="reorder_level"]');
+        if (reorderInput) {
+            reorderInput.addEventListener('input', function(e) {
+                e.target.value = e.target.value.replace(/[^0-9]/g, '');
+            });
+        }
+    });
+</script>
+{% endblock %}
